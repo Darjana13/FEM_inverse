@@ -38,6 +38,18 @@ int FEM_electro::ReadData(string path)
 		cur_el = -1;
 		in >> VELs[i].r[0] >> VELs[i].z[0] >> VELs[i].r[1] >> VELs[i].z[1] >> VELs[i].J[0];
 		VELs[i].J[1] = -VELs[i].J[0];
+		//for (int k = 0; k < 2; k++)
+		for (int k = 0; k < 1; k++)
+		{
+			cur_el = FindElem(VELs[i].r[k], VELs[i].z[k]);
+			double hr = mesh.nodes[mesh.elements[cur_el].node_loc[2]].r - mesh.nodes[mesh.elements[cur_el].node_loc[0]].r;
+			double hz = mesh.nodes[mesh.elements[cur_el].node_loc[6]].z - mesh.nodes[mesh.elements[cur_el].node_loc[0]].z;
+
+			for (int j = 0; j < 9; j++)
+			{
+				f_ist[mesh.elements[cur_el].node_loc[j]] = VELs[i].J[k] / hr/hr/hz;
+			}
+		}
 	}
 	in.close();
 
@@ -76,12 +88,22 @@ int FEM_electro::GetG_Loc_biquadratic(int el_id) // получение локальной G
 
 double FEM_electro::GetUTest(double r, double z)
 {
-	return z*z*z+r*r*r;
+	//return z*z*z+r*r*r;
+	return r == 0 ? -VELs[0].J[0] / mesh.sigma[0] / (1e-2) : -VELs[0].J[0] / (r * mesh.sigma[0]);
+}
+
+double FEM_electro::GetF(int node_id)
+{
+	if (f_ist.count(node_id))
+		return f_ist[node_id];
+	return 0;
 }
 
 double FEM_electro::GetF(double r, double z)
 {
+	//return r == 0 ? -VELs[0].J[0] / (1e-6) : -VELs[0].J[0] / (r * r * r);
 	//return -6*z-9*r;
+
 	for (int i = 0; i < kol_vel; i++)
 	{
 		if (VELs[i].r[0] == r && VELs[i].z[0] == z)
@@ -100,22 +122,36 @@ int FEM_electro::Getb_Loc_biquadratic(int el_id) // получение локального b
 {
 	vector<double> f(9);
 	bool not_null = 0;
+	double hr = 0, hz = 0;
+	double r_cur;
+
 	for (int i = 0; i < 9; i++)
 	{
-		f[i] = GetF(mesh.nodes[mesh.elements[el_id].node_loc[i]].r, mesh.nodes[mesh.elements[el_id].node_loc[i]].z);
+		//f[i] = GetF(mesh.nodes[mesh.elements[el_id].node_loc[i]].r, mesh.nodes[mesh.elements[el_id].node_loc[i]].z);
+		f[i] = GetF(mesh.elements[el_id].node_loc[i]);
 		if (f[i] != 0)
 		{
+			// объемный источник, J = I/2*pi
+			hr = mesh.nodes[mesh.elements[el_id].node_loc[2]].r - mesh.nodes[mesh.elements[el_id].node_loc[0]].r;
+			hz = mesh.nodes[mesh.elements[el_id].node_loc[6]].z - mesh.nodes[mesh.elements[el_id].node_loc[0]].z;
+			/*double f_ist_loc = f[i] / hr / hr / hz;
+			cout << " f_ist " << f_ist_loc << endl;
+			if(f_ist_loc / abs(f_ist_loc) != f[i] / abs(f[i]))
+				cout << " warring: too small mesh " << f_ist_loc << endl;
+			for (int j = 0; j < 9; j++)
+			{
+				f[i] = f_ist_loc;
+			}*/
+
 			not_null = 1;
 		}
 	}
 
 	if (not_null == 1)
 	{
-		double
-			hr = mesh.nodes[mesh.elements[el_id].node_loc[2]].r - mesh.nodes[mesh.elements[el_id].node_loc[0]].r,
-			hz = mesh.nodes[mesh.elements[el_id].node_loc[6]].z - mesh.nodes[mesh.elements[el_id].node_loc[0]].z;
-		double r_cur = mesh.nodes[mesh.elements[el_id].node_loc[0]].r;
-
+		//hr = mesh.nodes[mesh.elements[el_id].node_loc[2]].r - mesh.nodes[mesh.elements[el_id].node_loc[0]].r;
+		//hz = mesh.nodes[mesh.elements[el_id].node_loc[6]].z - mesh.nodes[mesh.elements[el_id].node_loc[0]].z;
+		r_cur = mesh.nodes[mesh.elements[el_id].node_loc[0]].r;
 		int r_i, z_i, r_j, z_j;
 
 		vector<vector<double>> M(9, vector<double>(9));
@@ -166,9 +202,19 @@ int FEM_electro::DirectTask()
 		GetG_Loc_biquadratic(i);
 
 		slau.AddLocal(A_loc, b_loc, i, mesh);
+
+		/*for (int j = 0; j < 9; j++)
+		{
+			for (int k = 0; k < 9; k++)
+			{
+				if (A_loc[j][k] != A_loc[j][k])
+					cout << " elem " << i << " row " << j << " col " << k << endl;
+			}
+		}*/
 		if(i % 100 == 0)
 			cout << "el " << i << " from " << mesh.kol_elements << endl;
 	}
+	//slau.CheakG(mesh);
 	//slau.SetS1(mesh);
 	slau.SetS1_null(mesh);
 	cout << "Set S1 " << endl;
@@ -184,12 +230,25 @@ int FEM_electro::DirectTask()
 	/*Solver check(slau.ia, slau.ja, slau.di, slau.au, slau.al, slau.b);
 	vector<double> b_ist(mesh.kol_nodes);
 	solver.A.Ax(q, b_ist);
+
 	for (int i = 0; i < mesh.kol_nodes; i++)
 	{
 		if (abs(slau.b[i] - b_ist[i]) > 1e-5)
 			cout << " i " << i << " b[i] " << slau.b[i] << " Aq[i] " << b_ist[i] << endl;
 	}*/
 
+	/*vector<double> q_ist(mesh.kol_nodes);
+	for (int i = 0; i < mesh.kol_nodes; i++)
+	{
+		q_ist[i] = VELs[0].J[0] / mesh.sigma[0] / (sqrt(mesh.nodes[i].r * mesh.nodes[i].r + mesh.nodes[i].z * mesh.nodes[i].z));
+	}
+	solver.A.Ax(q_ist, b_ist);
+	cout << " A*q_ist ";
+	for (int i = 0; i < mesh.kol_nodes; i++)
+	{
+		if (abs(slau.b[i] - b_ist[i]) > 1e-5)
+			cout << " i " << i << " q_ist " << q_ist[i] << " q " << q[i] << " b[i] " << slau.b[i] << " Aq[i] " << b_ist[i] << endl;
+	}*/
 
 	return 0;
 }
@@ -218,6 +277,7 @@ int FEM_electro::V_in_rec(vector<double> &V)
 int FEM_electro::PrintField(string filename)
 {
 	ofstream out(filename);
+	ofstream line_out("line0V.txt");
 	for (int i = 0; i < mesh.kol_nodes; i+=1)
 	{
 		out << mesh.nodes[i].r << " " << mesh.nodes[i].z << " " << q[i] << endl;
@@ -225,12 +285,18 @@ int FEM_electro::PrintField(string filename)
 		{
 			cout << " q[i] < 0 " << q[i] << " coord: " << mesh.nodes[i].r << " " << mesh.nodes[i].z << endl;
 		}*/
+		if (mesh.nodes[i].r > 1 && mesh.nodes[i].z == 0)
+		{
+			line_out << mesh.nodes[i].r << "\t" << q[i] << endl;
+		}
 	}
+
+
 
 	return 0;
 }
 
-double FEM_electro::V_in_point(double r, double z)
+int FEM_electro::FindElem(double r, double z)
 {
 	double r1, r2, z1, z2, ksi_r, ksi_z;
 	int node0 = 0, node_right = 2, node_top = 6;
@@ -241,17 +307,28 @@ double FEM_electro::V_in_point(double r, double z)
 		r2 = mesh.nodes[mesh.elements[i].node_loc[node_right]].r;
 		z1 = mesh.nodes[mesh.elements[i].node_loc[node0]].z;
 		z2 = mesh.nodes[mesh.elements[i].node_loc[node_top]].z;
-		
+
 		if (r1 <= r && r <= r2 &&
 			z1 <= z && z <= z2)
 			cur_el = i;
 	}
+	return cur_el;
+}
+
+double FEM_electro::V_in_point(double r, double z)
+{
+	double r1, r2, z1, z2, ksi_r, ksi_z;
+	int cur_el = FindElem(r, z);
 	if (cur_el == -1)
 	{
 		std::cout << "can't find (" << r << " " << z << ")\n";
 		std::cout << "V is considered 0\n";
 		return 0;
 	}
+	r1 = mesh.nodes[mesh.elements[cur_el].node_loc[0]].r;
+	r2 = mesh.nodes[mesh.elements[cur_el].node_loc[2]].r;
+	z1 = mesh.nodes[mesh.elements[cur_el].node_loc[0]].z;
+	z2 = mesh.nodes[mesh.elements[cur_el].node_loc[6]].z;
 
 	double V = 0;
 	ksi_r = getKsi(r, r1, r2);

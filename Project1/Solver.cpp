@@ -126,7 +126,7 @@ Solver::Solver(std::vector<int> ia, std::vector<int> ja, std::vector<double> di,
 {
     N = di.size();
     maxIter = 1000;
-    eps = 1E-15;
+    eps = 1E-13;
     A.ia = ia;
     A.ja = ja;
     A.di = di;

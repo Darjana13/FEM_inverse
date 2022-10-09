@@ -27,7 +27,7 @@ int PointsOnAxis(std::ifstream& in, std::vector<double>& all_X, double count_x) 
 				all_X[curr_count_x + 1] = all_X[curr_count_x - 1] + hx * pow(kx, p);
 				all_X[curr_count_x] = (all_X[curr_count_x + 1] + all_X[curr_count_x - 1]) / 2;
 			}
-			curr_count_x+=3;
+			curr_count_x+=1;
 
 			/*hx = 0.01;
 			kx = 1.1;
@@ -498,6 +498,20 @@ int Mesh::CreateMesh(string path)
 		{
 			out << all_R[k] << "\t" << all_Z[i] << "\n";
 		}
+	}
+	out.close();
+
+	out.open(path + "r.txt");
+		for (int k = 0; k < count_r * 2 - 1; k++)
+		{
+			out << all_R[k] << "\n";
+		}
+	out.close();
+
+	out.open(path + "z.txt");
+	for (int i = 0; i < count_z * 2 - 1; i++)
+	{
+			out << all_Z[i] << "\n";
 	}
 	out.close();
 

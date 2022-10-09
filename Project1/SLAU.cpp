@@ -119,7 +119,8 @@ int SLAU::AddLocal(vector<vector<double>>& A_loc, vector<double>& b_loc, int el_
 
 double GetUTest(double r, double z)
 {
-	return z*z*z + r * r * r;
+	//return z*z*z + r * r * r;
+	return r == 0 ? -1 /0.1 / (1e-2) : -1 / (r * 0.1);
 }
 
 int SLAU::SetS1_null(Mesh& mesh) // учет первых краевых
@@ -157,23 +158,48 @@ int SLAU::SetS1(Mesh& mesh) // учет первых краевых
 		di[mesh.S1[i]] = 1;
 		b[mesh.S1[i]] = 0;
 		//b[mesh.S1[i]] = GetUTest(mesh.nodes[mesh.S1[i]].r, mesh.nodes[mesh.S1[i]].z);
-		
+		//b[mesh.S1[i]] = 1.0 / mesh.sigma[0] / (sqrt(mesh.nodes[i].r * mesh.nodes[i].r + mesh.nodes[i].z * mesh.nodes[i].z));
 		
 		int node_id = mesh.S1[i];
 		for (int k = ia[node_id]; k < ia[node_id + 1]; k++)
 		{
-			al[k] = 0;
+			al[k] = 0; // строка, где 1ое краевое
 		}
 		for (int k = 0; k < ja.size(); k++)
 		{
 			if (ja[k] == node_id)
 			{
-				au[k] = 0;
+				au[k] = 0; // строка, где 1ое краевое
 			}
 		}
 	}
 	return 0;
 }
+
+int SLAU::CheakG(Mesh& mesh) // учет первых краевых
+{
+	double res = 0;
+	for (int node_id = 0; node_id < mesh.kol_nodes; node_id++)
+	{
+		res = di[node_id];
+
+		for (int k = ia[node_id]; k < ia[node_id + 1]; k++)
+		{
+			res += al[k]; // строка node_id
+		}
+		for (int k = 0; k < ja.size(); k++)
+		{
+			if (ja[k] == node_id)
+			{
+				res += au[k]; // строка node_id
+			}
+		}
+		if (abs(res) > 1e-10)
+			cout << " row " << node_id << " sum not null " << res << endl;
+	}
+	return 0;
+}
+
 //int SLAU::SetS1_test(Mesh& mesh) // учет первых краевых
 //{
 //	int NS1 = mesh.kol_S1nodes;

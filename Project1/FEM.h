@@ -69,6 +69,7 @@ public:
 
 class SLAU
 {
+
 public:
     vector<int> ia, ja;
     //vector<double> di, a, b;
@@ -83,6 +84,8 @@ public:
 
     int ShowMatrix();   // перечисляет позиции строка, столбец и значение
     void ClearValues(); // заполняет 0 di, a, b
+
+    int CheakG(Mesh& mesh);
 };
 
 //class FEM
@@ -137,6 +140,7 @@ class FEM_electro
     vector<double> b_loc;
     vector<double> q;
     int kol_rec, kol_vel;
+    map<int, double> f_ist;  // [глоб номер узла] = значение
     //vector<int> conner_loc; // локальные номера угловых узлов элементов; 
                             // [0] = левый нижний [1] = правый нижний
                             // [2] = левый верхний [3] = правый верхний
@@ -152,8 +156,11 @@ class FEM_electro
     //int Getb_Loc_biquadratic_test(int el_id);
 
     double GetF(double r, double z);
+    double GetF(int node_id);
+
 
     int ReadData(string path);
+    int FindElem(double r, double z);
 public:
 
     Mesh mesh;

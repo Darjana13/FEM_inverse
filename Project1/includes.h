@@ -8,6 +8,7 @@
 #include <math.h>
 #include <set>
 #include <sstream>
+#include <map>
 
 
 using namespace std; // отмена необходимости писать "std::" при работе с потоками
