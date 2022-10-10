@@ -6,13 +6,11 @@
 
 struct Receiver
 {
-    double r;
-    double z;
-    double V;
+    double r[2];
+    double z[2];
+    double V, V_true;
 
-    Receiver() { r = 0; z = 0; V = 0; }
-    Receiver(double _r, double _z, double _V) { r = _r; z = _z; V = _V; }
-    Receiver(double _r, double _V) { r = _r; z = 0; V = _V; }
+    Receiver() { r[0] = 100; r[1] = 200; z[0] = 0; z[1] = 0; V = 0; V_true = 0; }
 };
 
 struct VEL
@@ -170,8 +168,14 @@ public:
 
     int InitTask(string path);
     int DirectTask();
+    int DirectTask(int mat_id, double h_sigma);
     double V_in_point(double r, double z);
     int V_in_rec(vector<double> &V);
     double GetUTest(double r, double z);
+
     int PrintField(string filename);
+    int PrintLine(string filename, double z, double r); // V вдоль линии z, начиная с r
+
+    double GetInverseFunc();
+
 };

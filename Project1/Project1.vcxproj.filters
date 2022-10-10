@@ -45,6 +45,9 @@
     <ClCompile Include="Solver.cpp">
       <Filter>Исходные файлы\solver</Filter>
     </ClCompile>
+    <ClCompile Include="Inverse.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cgm.h">

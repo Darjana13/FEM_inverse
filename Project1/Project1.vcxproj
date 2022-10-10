@@ -141,6 +141,7 @@
   <ItemGroup>
     <ClCompile Include="cgm.cpp" />
     <ClCompile Include="FEM.cpp" />
+    <ClCompile Include="Inverse.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="MyMatrix.cpp" />
     <ClCompile Include="MyVector.cpp" />
