@@ -38,8 +38,8 @@ int FEM_electro::ReadData(string path)
 		in >> VELs[i].r[0] >> VELs[i].z[0] >> VELs[i].r[1] >> VELs[i].z[1] >> VELs[i].J[0];
 		VELs[i].J[0] /= (2.0 * M_PI);
 		VELs[i].J[1] = -VELs[i].J[0];
-		//for (int k = 0; k < 2; k++)
-		for (int k = 0; k < 1; k++)
+		for (int k = 0; k < 2; k++)
+		//for (int k = 0; k < 1; k++)
 		{
 			cur_el[k] = FindElem(VELs[i].r[k], VELs[i].z[k]);
 			
