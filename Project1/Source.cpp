@@ -35,7 +35,9 @@ void main()
  	setlocale(0, ""); // установка русского языка для вывода
 	FEM_electro task;
 	vector<double> V;
-	string path = "test 3layers\\";
+	//string path = "test 3layers\\";
+	string path = "test_for_me\\";
+	
 	//vector<pair<double, double>> points;
 	//GetPoints(points, path);
 	//----------------------------------------------------------------------------
@@ -62,6 +64,18 @@ void main()
 	{
 		task.receivers[i].V_true = V[i];
 	}
+	task.receivers[4].V_true *= 1.1; // добавить шум 10%
+
+	ifstream in(path + "Receiver.txt");
+	ofp.open(path + "Receiver_V.txt");
+	ofp << task.receivers.size();
+	for (int i = 0; i < task.receivers.size(); i++)
+	{
+		ofp << task.receivers[i].r[0] << " " << task.receivers[i].z[0] << " "
+			<< task.receivers[i].r[1] << " " << task.receivers[i].z[1] << " "
+			<< task.receivers[i].V_true << endl;
+	}
+	ofp.close();
 	//--------------------------------------------------------------------------
 
 	/*for (int i = 0; i < V.size(); i++)
@@ -70,14 +84,14 @@ void main()
 	}*/
 
 	// -------------------------обратная задача---------------------------------
-
-	ofp.open(path + "history_func.txt");
+	// ---------------------------поиск сигмы-----------------------------------
+	/*ofp.open(path + "history_func.txt");
 	ofp << "iter " << '\t' << "sigma" << '\t' << "func" << endl;
 	// начальные значения сигм
-	double sigma_cur = 0.01; // 0.1
-	int sigma_id = 1;
+	double sigma_cur = 0.1; // 0.1
+	int sigma_id = 0;
 	double h;
-	double eps = 1e-10;
+	double eps = 1e-14;
 	int max_iter = 30;
 	double func_now = 100;
 	double a, b;
@@ -90,9 +104,9 @@ void main()
 	func_now = task.GetInverseFunc();
 	cout << "iter " << 0 << " sigma " << sigma_cur << " func " << func_now << endl;
 	ofp << 0 << '\t' << sigma_cur << '\t' << func_now << endl;
-
-	// функционал: SUM (1/V_true(V-Vtrue)^2) по всем приемникам
-	for (int iter = 0; iter < max_iter && func_now > eps; iter++)
+	double prev_func = 1000;
+	// функционал: SUM (1/V_true(V-Vtrue))^2 по всем приемникам
+	for (int iter = 0; iter < max_iter && func_now > eps && abs(prev_func - func_now)/ func_now > 1e-8; iter++)
 	{
 		h = 0.05 * sigma_cur;
 		task.DirectTask(sigma_id, sigma_cur + h);
@@ -105,6 +119,11 @@ void main()
 		{
 			a += ( (V[i] - task.receivers[i].V) / h / task.receivers[i].V_true)* ((V[i] - task.receivers[i].V) / h / task.receivers[i].V_true);
 			b += -(task.receivers[i].V - task.receivers[i].V_true) * (V[i] - task.receivers[i].V) / h / task.receivers[i].V_true / task.receivers[i].V_true;
+		
+			// без весов (!в task.GetInverseFunc() тоже менять!)
+			//a += ((V[i] - task.receivers[i].V) / h / 1.0) * ((V[i] - task.receivers[i].V) / h / 1.0);
+			//b += -(task.receivers[i].V - task.receivers[i].V_true) * (V[i] - task.receivers[i].V) / h / 1.0;
+
 		}
 		
 		// сигма_след = сигма + b1 / а11
@@ -116,10 +135,69 @@ void main()
 		{
 			task.receivers[i].V = V[i];
 		}
+		prev_func = func_now;
 		func_now = task.GetInverseFunc();
-		cout << "iter " << iter + 1 << " sigma " << sigma_cur << " func " << func_now << endl;
-		ofp << iter + 1 << '\t' << sigma_cur << '\t' << func_now << endl;
+		cout << "iter " << iter + 1 << " sigma " << sigma_cur << " func " << func_now << " d_func " << abs(prev_func - func_now) / func_now << endl;
+		ofp << iter + 1 << '\t' << sigma_cur << '\t' << func_now << '\t' << abs(prev_func - func_now) / func_now << endl;
 	}
-	
+	ofp.close();*/
+
+	// ---------------------------поиск силы тока-----------------------------------
+	ofp.open(path + "history_func_I.txt");
+	ofp << "iter " << '\t' << "I" << '\t' << "func" << endl;
+	// начальные значения
+	double I_cur = 6;
+	//int sigma_id = 0;
+	double h;
+	double eps = 1e-14;
+	int max_iter = 30;
+	double func_now = 100;
+	double a, b;
+	task.DirectTask(0, I_cur, true);
+	task.V_in_rec(V);
+	for (int i = 0; i < V.size(); i++)
+	{
+		task.receivers[i].V = V[i];
+	}
+	func_now = task.GetInverseFunc();
+	cout << "iter " << 0 << " I " << I_cur << " func " << func_now << endl;
+	ofp << 0 << '\t' << I_cur << '\t' << func_now << endl;
+	double prev_func = 1000;
+	// функционал: SUM (1/V_true(V-Vtrue))^2 по всем приемникам
+	for (int iter = 0; iter < max_iter && func_now > eps && abs(prev_func - func_now) / func_now > 1e-8; iter++)
+	{
+		h = 0.05 * I_cur;
+		task.DirectTask(0, I_cur + h, true);
+		task.V_in_rec(V);
+
+		// ищем 1 сигму, поэтому СЛАУ а11 шаг =b1, где а11 = SUM ( (1/V_true(V(sigma + h) - V(sigma))/h)^2), b1 = SUM ( (1/V_true)^2*(V(sigma + h) - V(sigma))/h*(V-Vtrue))
+		a = 0;
+		b = 0;
+		for (int i = 0; i < V.size(); i++)
+		{
+			a += ((V[i] - task.receivers[i].V) / h / task.receivers[i].V_true) * ((V[i] - task.receivers[i].V) / h / task.receivers[i].V_true);
+			b += -(task.receivers[i].V - task.receivers[i].V_true) * (V[i] - task.receivers[i].V) / h / task.receivers[i].V_true / task.receivers[i].V_true;
+
+			// без весов (!в task.GetInverseFunc() тоже менять!)
+			//a += ((V[i] - task.receivers[i].V) / h / 1.0) * ((V[i] - task.receivers[i].V) / h / 1.0);
+			//b += -(task.receivers[i].V - task.receivers[i].V_true) * (V[i] - task.receivers[i].V) / h / 1.0;
+
+		}
+
+		// сигма_след = сигма + b1 / а11
+		I_cur = I_cur + b / a;
+
+		task.DirectTask(0, I_cur, true);
+		task.V_in_rec(V);
+		for (int i = 0; i < V.size(); i++)
+		{
+			task.receivers[i].V = V[i];
+		}
+		prev_func = func_now;
+		func_now = task.GetInverseFunc();
+		cout << "iter " << iter + 1 << " I " << I_cur << " func " << func_now << " d_func " << abs(prev_func - func_now) / func_now << endl;
+		ofp << iter + 1 << '\t' << I_cur << '\t' << func_now << '\t' << abs(prev_func - func_now) / func_now << endl;
+	}
+
 	return;
 }

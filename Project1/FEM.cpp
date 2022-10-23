@@ -39,7 +39,6 @@ int FEM_electro::ReadData(string path)
 		VELs[i].J[0] /= (2.0 * M_PI);
 		VELs[i].J[1] = -VELs[i].J[0];
 		for (int k = 0; k < 2; k++)
-		//for (int k = 0; k < 1; k++)
 		{
 			cur_el[k] = FindElem(VELs[i].r[k], VELs[i].z[k]);
 			
@@ -190,6 +189,42 @@ int FEM_electro::Getb_Loc_biquadratic(int el_id) // получение локального b
 		}
 	}
 
+	return 0;
+}
+
+int FEM_electro::DirectTask(int VEL_id, double h_I, bool flag)
+{
+	double save_I = VELs[VEL_id].J[0];
+	int cur_el[2];
+	VELs[VEL_id].J[0] = h_I / (2.0 * M_PI);
+	VELs[VEL_id].J[1] = -VELs[VEL_id].J[0];
+	for (int k = 0; k < 2; k++)
+	{
+		cur_el[k] = FindElem(VELs[VEL_id].r[k], VELs[VEL_id].z[k]);
+
+		double hr = mesh.nodes[mesh.elements[cur_el[k]].node_loc[2]].r - mesh.nodes[mesh.elements[cur_el[k]].node_loc[0]].r;
+		double hz = mesh.nodes[mesh.elements[cur_el[k]].node_loc[6]].z - mesh.nodes[mesh.elements[cur_el[k]].node_loc[0]].z;
+
+		for (int j = 0; j < 9; j++)
+		{
+			f_ist[mesh.elements[cur_el[k]].node_loc[j]] = VELs[VEL_id].J[k] / hr / hr / hz;
+		}
+	}
+	DirectTask();
+	VELs[VEL_id].J[0] = save_I;
+	VELs[VEL_id].J[1] = -save_I;
+	for (int k = 0; k < 2; k++)
+	{
+		cur_el[k] = FindElem(VELs[VEL_id].r[k], VELs[VEL_id].z[k]);
+
+		double hr = mesh.nodes[mesh.elements[cur_el[k]].node_loc[2]].r - mesh.nodes[mesh.elements[cur_el[k]].node_loc[0]].r;
+		double hz = mesh.nodes[mesh.elements[cur_el[k]].node_loc[6]].z - mesh.nodes[mesh.elements[cur_el[k]].node_loc[0]].z;
+
+		for (int j = 0; j < 9; j++)
+		{
+			f_ist[mesh.elements[cur_el[k]].node_loc[j]] = VELs[VEL_id].J[k] / hr / hr / hz;
+		}
+	}
 	return 0;
 }
 

@@ -169,6 +169,8 @@ public:
     int InitTask(string path);
     int DirectTask();
     int DirectTask(int mat_id, double h_sigma);
+    int DirectTask(int VEL_id, double h_I, bool flag);
+
     double V_in_point(double r, double z);
     int V_in_rec(vector<double> &V);
     double GetUTest(double r, double z);

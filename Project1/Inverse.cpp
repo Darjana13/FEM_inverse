@@ -5,7 +5,10 @@ double FEM_electro::GetInverseFunc()
 	double res = 0;
 	for (int i = 0; i < receivers.size(); i++)
 	{
-		res += (receivers[i].V - receivers[i].V_true)* (receivers[i].V - receivers[i].V_true) / receivers[i].V_true;
+		res += (receivers[i].V - receivers[i].V_true)* (receivers[i].V - receivers[i].V_true) / (receivers[i].V_true * receivers[i].V_true);
+		
+		// без весов (!в main тоже менять!)
+		//res += (receivers[i].V - receivers[i].V_true) * (receivers[i].V - receivers[i].V_true);
 
 		cout << " V_true " << receivers[i].V_true << " V " << receivers[i].V << " res " << res << endl;
 	}

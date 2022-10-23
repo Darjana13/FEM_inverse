@@ -199,21 +199,3 @@ int SLAU::CheakG(Mesh& mesh) // учет первых краевых
 	}
 	return 0;
 }
-
-//int SLAU::SetS1_test(Mesh& mesh) // учет первых краевых
-//{
-//	int NS1 = mesh.kol_S1nodes;
-//	double max = 0;
-//	for (int i = 0; i < di.size(); i++)
-//	{
-//		if (di[i] > max)
-//			max = di[i];
-//	}
-//	for (int i = 0; i < NS1; i++)
-//	{
-//		di[mesh.S1[i]] = max * BIG_VALUE;
-//		b[mesh.S1[i]] = max * BIG_VALUE * u_test(mesh.nodes[mesh.S1[i]].x, mesh.nodes[mesh.S1[i]].y);
-//		cout << mesh.nodes[mesh.S1[i]].x << " " << mesh.nodes[mesh.S1[i]].y << " " << u_test(mesh.nodes[mesh.S1[i]].x, mesh.nodes[mesh.S1[i]].y) << endl;
-//	}
-//	return 0;
-//}
