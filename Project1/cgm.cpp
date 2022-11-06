@@ -79,7 +79,7 @@ cgm_solver::cgm_solver(std::vector<int> &_ia, std::vector<int>& _ja,
     std::vector<double>& _di, std::vector<double>& _al, std::vector<double>& _b, double _eps)
 {
     n = _di.size();
-    max_iter = 1000;
+    max_iter = 500;
     eps = _eps;
     //ggu = _al;
     ggl = _al;

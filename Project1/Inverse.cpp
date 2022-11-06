@@ -15,3 +15,39 @@ double FEM_electro::GetInverseFunc()
 	cout << " res " << res << endl;
 	return res;
 }
+
+double FEM_electro::GetInverseFunc(vector<double>& V, double alpha, vector<double>& I)
+{
+	double res = 0;
+	for (int i = 0; i < receivers.size(); i++)
+	{
+		res += (V[i] - receivers[i].V_true) * (V[i] - receivers[i].V_true) / (receivers[i].V_true * receivers[i].V_true);
+	}
+	if (alpha != 0)
+	{
+		for (int i = 0; i < I.size(); i++)
+		{
+			res += alpha * (I[i]*I[i]);
+		}
+	}
+	cout << " res " << res << endl;
+	return res;
+}
+
+double FEM_electro::GetInverseFunc(vector<double>& V, double alpha, vector<double>& I, vector<double>& Ih)
+{
+	double res = 0;
+	for (int i = 0; i < receivers.size(); i++)
+	{
+		res += (V[i] - receivers[i].V_true) * (V[i] - receivers[i].V_true) / (receivers[i].V_true * receivers[i].V_true);
+	}
+	if (alpha != 0)
+	{
+		for (int i = 0; i < I.size(); i++)
+		{
+			res += alpha * ((I[i] + Ih[i]) * (I[i] + Ih[i]));
+		}
+	}
+	cout << " res " << res << endl;
+	return res;
+}

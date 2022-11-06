@@ -6,11 +6,12 @@
 
 struct Receiver
 {
-    double r[2];
-    double z[2];
+    //double r[2];
+    //double z[2];
+    double x[2], y[2];
     double V, V_true;
 
-    Receiver() { r[0] = 100; r[1] = 200; z[0] = 0; z[1] = 0; V = 0; V_true = 0; }
+    Receiver() { x[0] = 100; x[1] = 200; y[0] = 0; y[1] = 0; V = 0; V_true = 0; }
 };
 
 struct VEL
@@ -165,6 +166,7 @@ public:
     SLAU slau;
     vector<Receiver> receivers;
     vector<VEL> VELs;
+    vector<pair<double, double>> VELs_place;
 
     int InitTask(string path);
     int DirectTask();
@@ -173,11 +175,18 @@ public:
 
     double V_in_point(double r, double z);
     int V_in_rec(vector<double> &V);
+    int V_in_rec(vector<double>& V, int VEL_id);
+
     double GetUTest(double r, double z);
 
     int PrintField(string filename);
     int PrintLine(string filename, double z, double r); // V вдоль линии z, начиная с r
 
     double GetInverseFunc();
+    double GetInverseFunc(vector<double>& V, double alpha, vector<double>& I);
+    double GetInverseFunc(vector<double>& V, double alpha, vector<double>& I, vector<double>& Ih);
+
+    double GetR(int rec_id, int VEL_id, int end);
+
 
 };

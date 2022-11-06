@@ -24,7 +24,7 @@ int FEM_electro::ReadData(string path)
 	receivers.resize(kol_rec);
 	for (int i = 0; i < kol_rec; i++)
 	{
-		in >> receivers[i].r[0] >> receivers[i].z[0] >> receivers[i].r[1] >> receivers[i].z[1] >> receivers[i].V_true;
+		in >> receivers[i].x[0] >> receivers[i].y[0] >> receivers[i].x[1] >> receivers[i].y[1] >> receivers[i].V_true;
 	}
 	in.close();
 
@@ -49,16 +49,25 @@ int FEM_electro::ReadData(string path)
 			{
 				f_ist[mesh.elements[cur_el[k]].node_loc[j]] = VELs[i].J[k] / hr/hr/hz;
 			}
-			/*f_ist[mesh.elements[cur_el].node_loc[3]] = VELs[i].J[k] / hr / hr / hz;
-			f_ist[mesh.elements[cur_el].node_loc[4]] = VELs[i].J[k] / hr / hr / hz;
-			f_ist[mesh.elements[cur_el].node_loc[6]] = VELs[i].J[k] / hr / hr / hz;
-			f_ist[mesh.elements[cur_el].node_loc[7]] = VELs[i].J[k] / hr / hr / hz;*/
 		}
 		if (cur_el[0] == cur_el[1])
 		{
 			cout << "Error: VEL is placed in one elem " << endl;
 			exit(1);
 		}
+	}
+	in.close();
+
+
+	in.open(path + "VEL_place.txt");
+	int k = 0;
+	double x, y;
+	in >> k;
+	VELs_place.resize(k);
+	for (int i = 0; i < k; i++)
+	{
+		in >> x >> y;
+		VELs_place[i] = make_pair(x, y);
 	}
 	in.close();
 
@@ -194,6 +203,12 @@ int FEM_electro::Getb_Loc_biquadratic(int el_id) // получение локального b
 
 int FEM_electro::DirectTask(int VEL_id, double h_I, bool flag)
 {
+	if (h_I == 0)
+	{
+		fill(q.begin(), q.end(), 0.0);
+		return 0;
+	}
+
 	double save_I = VELs[VEL_id].J[0];
 	int cur_el[2];
 	VELs[VEL_id].J[0] = h_I / (2.0 * M_PI);
@@ -225,6 +240,7 @@ int FEM_electro::DirectTask(int VEL_id, double h_I, bool flag)
 			f_ist[mesh.elements[cur_el[k]].node_loc[j]] = VELs[VEL_id].J[k] / hr / hr / hz;
 		}
 	}
+
 	return 0;
 }
 
@@ -302,7 +318,7 @@ int FEM_electro::DirectTask()
 
 int FEM_electro::V_in_rec(vector<double> &V)
 {
-	V.resize(kol_rec);
+	/*V.resize(kol_rec);
 	double V_start, V_end;
 	for(int i = 0; i < kol_rec; i++)
 	{
@@ -310,6 +326,20 @@ int FEM_electro::V_in_rec(vector<double> &V)
 		 V_end = V_in_point(receivers[i].r[1], receivers[i].z[1]);
 
 		 V[i] = V_start - V_end;
+	}*/
+	return 0;
+}
+
+int FEM_electro::V_in_rec(vector<double>& V, int VEL_id)
+{
+	V.resize(kol_rec);
+	double V_start, V_end;
+	for (int i = 0; i < kol_rec; i++)
+	{
+		V_start = V_in_point(GetR(i, VEL_id, 0), 0);
+		V_end = V_in_point(GetR(i, VEL_id, 1), 0);
+
+		V[i] = V_start - V_end;
 	}
 	return 0;
 }
@@ -380,4 +410,12 @@ double FEM_electro::V_in_point(double r, double z)
 		V += basis[i%3](ksi_r) * basis[i/3](ksi_z) * q[mesh.elements[cur_el].node_loc[i]];
 	}
 	return V;
+}
+
+double FEM_electro::GetR(int rec_id, int VEL_id, int end)
+{
+	double res = 0;
+	res += (receivers[rec_id].x[end] - VELs_place[VEL_id].first) * (receivers[rec_id].x[end] - VELs_place[VEL_id].first);
+	res += (receivers[rec_id].y[end] - VELs_place[VEL_id].second) * (receivers[rec_id].y[end] - VELs_place[VEL_id].second);
+	return sqrt(res);
 }
