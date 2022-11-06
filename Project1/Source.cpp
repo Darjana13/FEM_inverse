@@ -29,6 +29,8 @@ int GetPoints(vector<pair<double, double>> &point, string path)
 
 int Gauss(vector<vector<double>>& A, vector<double>& b, int N)
 {
+
+
 	// √аусс
    // приведение к треугольному виду
 	double t;
@@ -59,6 +61,108 @@ int Gauss(vector<vector<double>>& A, vector<double>& b, int N)
 	return 0;
 }
 
+int gauss(vector<vector<double>>& a, vector<double>& y, int n)
+{
+	//верхний треугольный вид
+	for (int i = 0; i < n; i++)
+	{
+		if (!a[i][i])
+		{
+			bool flag = false;
+			for (int j = i + 1; j < n && !flag; j++)
+				if (a[j][i])
+				{
+					for (int k = i; k < n; k++)
+					{
+						double tmp = a[i][k];
+						a[i][k] = a[j][k];
+						a[j][k] = tmp;
+					}
+					double tmp = y[i];
+					y[i] = y[j];
+					y[j] = tmp;
+					flag = true;
+				}
+		}
+		y[i] = y[i] / a[i][i];
+		for (int j = n - 1; j >= i; j--)
+			a[i][j] = a[i][j] / a[i][i];
+		for (int j = i + 1; j < n; j++)
+		{
+			y[j] -= y[i] * a[j][i];
+			for (int k = n - 1; k >= i; k--)
+				a[j][k] -= a[i][k] * a[j][i];
+		}
+	}
+	//диагональный вид
+	for (int i = n - 1; i > 0; i--)
+		for (int j = i - 1; j >= 0; j--)
+			y[j] -= a[j][i] * y[i];
+
+	return 0;
+
+	/*double* x, max;
+	int k, index;
+	const double eps = 1e-5;  // точность
+	x = new double[n];
+	k = 0;
+	while (k < n)
+	{
+		// ѕоиск строки с максимальным a[i][k]
+		max = abs(a[k][k]);
+		index = k;
+		for (int i = k + 1; i < n; i++)
+		{
+			if (abs(a[i][k]) > max)
+			{
+				max = abs(a[i][k]);
+				index = i;
+			}
+		}
+		cout << " max diag " << max << endl;
+		// ѕерестановка строк
+		if (max < eps)
+		{
+			// нет ненулевых диагональных элементов
+			cout << "–ешение получить невозможно из-за нулевого столбца ";
+			cout << index << " матрицы A" << endl;
+			return 0;
+		}
+		for (int j = 0; j < n; j++)
+		{
+			double temp = a[k][j];
+			a[k][j] = a[index][j];
+			a[index][j] = temp;
+		}
+		double temp = y[k];
+		y[k] = y[index];
+		y[index] = temp;
+		// Ќормализаци€ уравнений
+		for (int i = k; i < n; i++)
+		{
+			double temp = a[i][k];
+			if (abs(temp) < eps) continue; // дл€ нулевого коэффициента пропустить
+			for (int j = 0; j < n; j++)
+				a[i][j] = a[i][j] / temp;
+			y[i] = y[i] / temp;
+			if (i == k)  continue; // уравнение не вычитать само из себ€
+			for (int j = 0; j < n; j++)
+				a[i][j] = a[i][j] - a[k][j];
+			y[i] = y[i] - y[k];
+		}
+		k++;
+	}
+	// обратна€ подстановка
+	for (k = n - 1; k >= 0; k--)
+	{
+		x[k] = y[k];
+		for (int i = 0; i < k; i++)
+			y[i] = y[i] - a[i][k] * x[k];
+	}
+	for (int i = 0; i < n; i++)
+		y[i] = x[k];
+	return 0;*/
+}
 
 void main()
 {
@@ -67,7 +171,7 @@ void main()
 	bool write_all_results = 1;
  	setlocale(0, ""); // установка русского €зыка дл€ вывода
 	FEM_electro task;
-	vector<double> V, V_tmp;
+	vector<double> V, V_tmp, V_tmp_i, V_tmp_j;
 	string path = "test_for_me_2\\";
 	
 	//----------------------------------------------------------------------------
@@ -89,14 +193,17 @@ void main()
 
 	//-------------------получаем синтетические данные--------------------------
 	int true_vel_id = 0;
-	double true_I = abs(task.VELs[0].J[0]);
+	double true_I = abs(task.VELs[0].J[0]) * (2.0 * M_PI);
 	//task.DirectTask();
 	task.DirectTask(0, 1.0, true);
 	task.V_in_rec(V, true_vel_id);
 	for (int i = 0; i < V.size(); i++)
 	{
 		task.receivers[i].V_true = true_I * V[i];
-		//task.receivers[i].V_true = 1.01 * true_I *  V[i]; // добавить шум 1% во все приемники
+		//if(i%2 == 0)
+		//	task.receivers[i].V_true = 1.01 * true_I *  V[i]; // добавить шум 1% во все приемники
+		//else
+		//	task.receivers[i].V_true = 0.99 * true_I * V[i]; // добавить шум 1% во все приемники
 	}
 	//task.receivers[4].V_true *= 1.1; // добавить шум 10%
 
@@ -244,77 +351,88 @@ void main()
 	// начальные значени€
 	vector<double> I_cur =
 	{
-	9.5238,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0
+	9,
+	0.001,
+	0.001,
+	0.001,
+	0.001,
+	0.001,
+	0.001,
+	0.001,
+	0.001,
+	0.001
 	};
 	
 	double h;
-	double eps = 1e-14;
-	int max_iter = 5;
+	double eps = 1e-15;
+	int max_iter = 500;
 	double func_now = 100, func_save, func_alpha;
-	double alpha = 0, alpha_loc;
+	double alpha = 1e-20, alpha_loc;
+	int alpha_increese = 0;
+	int n_param = 10;
 
 	vector<vector<double>> dV; // dV[i] - V с приращением по iому параметру
-	dV.resize(10);
-	for (int i = 0; i < 10; i++)
+	dV.resize(n_param);
+	for (int i = 0; i < n_param; i++)
 	{
 		dV[i].resize(V.size());
 	}
-	vector<vector<double>> V_one_source; // V_one_source[i] - V от iого источника
-	V_one_source.resize(10);
-	for (int i = 0; i < 10; i++)
+	vector<vector<double>> V_one_source; // V_one_source[i] - V от iого единичного источника
+	V_one_source.resize(n_param);
+	for (int i = 0; i < n_param; i++)
 	{
 		V_one_source[i].resize(V.size());
 	}
 	vector<vector<double>> A_orig;
-	A_orig.resize(10);
-	for (int i = 0; i < 10; i++)
+	A_orig.resize(n_param);
+	for (int i = 0; i < n_param; i++)
 	{
-		A_orig[i].resize(10);
+		A_orig[i].resize(n_param);
 	}
-	vector<double> B_orig(10);
+	vector<double> B_orig(n_param);
 	vector<vector<double>> A;
-	A.resize(10);
-	for (int i = 0; i < 10; i++)
+	A.resize(n_param);
+	for (int i = 0; i < n_param; i++)
 	{
-		A[i].resize(10);
+		A[i].resize(n_param);
 	}
-	vector<double> B(10), B_save(10), V_save;
+	vector<double> B(n_param), B_save(n_param), V_save;
 
+	ofstream file2(path + "info.txt");
 	fill(V.begin(), V.end(), 0);
-	for (int i_vel = 0; i_vel < 10; i_vel++)
+	//cout << "test" << endl;
+	for (int i_vel = 0; i_vel < n_param; i_vel++)
 	{
-		task.DirectTask(0, I_cur[i_vel], true);
+		//task.DirectTask(0, I_cur[i_vel], true);
+
 		task.V_in_rec(V_tmp, i_vel);
+		//cout << endl;
 		for (int i = 0; i < V.size(); i++)
 		{
-			V[i] += V_tmp[i];
+			V[i] += I_cur[i_vel] * V_tmp[i];
 			V_one_source[i_vel][i] = V_tmp[i];
+			file2 << V_tmp[i] << '\t';
 		}
+		file2 << endl;
 	}
+
+	file2.close();
 	for (int i = 0; i < V.size(); i++)
 	{
 		task.receivers[i].V = V[i];
+		//cout << V[i] << " " << task.receivers[i].V_true << endl;
 	}
 	
-	//func_now = task.GetInverseFunc(V, 0, I_cur);
-	func_now = task.GetInverseFunc();
+	func_now = task.GetInverseFunc(V, alpha, I_cur);
+	//func_now = task.GetInverseFunc();
 
-	cout << "iter " << 0 << " func " << func_now << endl;
-	for (int i = 0; i < 10; i++)
-	{
-		cout << I_cur[i] << endl;
-	}
+	//cout << "iter " << 0 << " func " << func_now << endl;
+	//for (int i = 0; i < n_param; i++)
+	//{
+	//	cout << I_cur[i] << endl;
+	//}
 	ofp << 0 << '\t' << "   " << '\t';
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < n_param; i++)
 	{
 		ofp << I_cur[i] << '\t';
 	} 
@@ -324,7 +442,7 @@ void main()
 	for (int iter = 0; iter < max_iter && func_now > eps && abs(prev_func - func_now) / func_now > 1e-8; iter++)
 	{
 		// запомним значени€ с приращением
-		for (int i_param = 0; i_param < 10; i_param++)
+		/*for (int i_param = 0; i_param < 10; i_param++)
 		{
 			fill(dV[i_param].begin(), dV[i_param].end(), 0);
 			for (int i_vel = 0; i_vel < 10; i_vel++)
@@ -350,49 +468,69 @@ void main()
 				
 			}
 		}
+		*/
 		// значение без приращени€ есть в V
-		
+		double max_diag = 0;
+
 		// сборка матрицы
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < n_param; i++)
 		{
 			B_orig[i] = 0;
-			for (int j = 0; j < 10; j++)
+			//task.V_in_rec(V_tmp_i, i);
+			for (int j = 0; j < n_param; j++)
 			{
+				//task.V_in_rec(V_tmp_j, j);
+
 				A_orig[i][j] = 0;
 				for (int k = 0; k < V.size(); k++)
 				{
+					//cout << V[k] << endl;
 					A_orig[i][j] +=
-						(1.0 / (task.receivers[k].V_true * task.receivers[k].V_true))  // w_k
-						* ((dV[i][k] - V[k]) / (0.05 * I_cur[i]))  // dVk/dI_i
-						* ((dV[j][k] - V[k]) / (0.05 * I_cur[j])); // dVk/dI_j
-					B_orig[i] +=
-						(-1.0 / (task.receivers[k].V_true * task.receivers[k].V_true))  // w_k
-						* ((dV[i][k] - V[k]) / (0.05 * I_cur[i]))  // dVk/dI_i
-						* (V[k] - task.receivers[k].V_true); // (V(I) - V*)
+						1.0//(1.0 / (task.receivers[k].V_true * task.receivers[k].V_true))  // w_k
+						* (V_one_source[i][k] / (task.receivers[k].V_true))  // dVk/dI_i
+						* (V_one_source[j][k] / (task.receivers[k].V_true)); // dVk/dI_j
+				
 				}
+				//cout << "A" << i << j << " " << A_orig[i][j] << endl;
+
+				if (i == j)
+					if (max_diag < abs(A_orig[i][j]))
+						max_diag = abs(A_orig[i][j]);
 			}
+			for (int k = 0; k < V.size(); k++)
+			{
+				B_orig[i] +=
+					-1.0//(-1.0 / (task.receivers[k].V_true * task.receivers[k].V_true))  // w_k
+					* (V_one_source[i][k] / (task.receivers[k].V_true))  // dVk/dI_i
+					* (V[k] - task.receivers[k].V_true) / (task.receivers[k].V_true); // (V(I) - V*)
+
+			}
+			//cout << "b" << i << " " << B_orig[i] << endl;
+
+			
 		}
 		
 		// регул€ризаци€
 		alpha_loc = alpha;
+		//alpha_loc = max_diag/100.;
 		A = A_orig;
 		B = B_orig;
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < n_param; i++)
 		{
 			A[i][i] += alpha_loc;
 		}
-		Gauss(A, B, 10);
+		//Gauss(A, B, n_param);
+		gauss(A, B, n_param);
+		
 		// подстановка новой I
 		fill(V.begin(), V.end(), 0);
-		for (int i_vel = 0; i_vel < 10; i_vel++)
+		for (int i_vel = 0; i_vel < n_param; i_vel++)
 		{
-			task.DirectTask(0, I_cur[i_vel] + B[i_vel], true);
+			//task.DirectTask(0, I_cur[i_vel] + B[i_vel], true);
 			task.V_in_rec(V_tmp, i_vel);
 			for (int i = 0; i < V.size(); i++)
 			{
-				V[i] += V_tmp[i];
-				V_one_source[i_vel][i] = V_tmp[i];
-
+				V[i] += (I_cur[i_vel] + B[i_vel])*V_tmp[i];
 			}
 		}
 		func_alpha = task.GetInverseFunc(V, alpha_loc, I_cur, B);
@@ -401,78 +539,81 @@ void main()
 		do
 		{
 			ofp << "   " << '\t' << alpha_loc << '\t';
-			for (int i = 0; i < 10; i++)
+			for (int i = 0; i < n_param; i++)
 			{
 				ofp << I_cur[i] + B[i] << '\t';
 			}
-			ofp << func_alpha << '\t' << abs(prev_func_alpha - func_alpha) / func_alpha << endl;
-			cout << "   " << '\t' << alpha_loc << '\t';
-			for (int i = 0; i < 10; i++)
-			{
-				cout << I_cur[i] + B[i] << '\t';
-			}
-			cout << func_alpha << '\t' << abs(prev_func_alpha - func_alpha) / func_alpha << endl;
+			ofp << func_alpha << '\t' << abs(prev_func_alpha - func_alpha) / func_alpha;
+			ofp << '\t' << task.GetInverseFunc(V, 0, I_cur, B);
+			ofp << endl;
+			//cout << "   " << '\t' << alpha_loc << '\t';
+			//for (int i = 0; i < n_param; i++)
+			//{
+			//	cout << I_cur[i] + B[i] << '\t';
+			//}
+			//cout << func_alpha << '\t' << abs(prev_func_alpha - func_alpha) / func_alpha << endl;
 			B_save = B;
 			V_save = V;
 			func_save = func_alpha;
 			alpha_loc *= 10;
 			A = A_orig;
 			B = B_orig;
-			for (int i = 0; i < 10; i++)
+			for (int i = 0; i < n_param; i++)
 			{
 				A[i][i] += alpha_loc;
 			}
-			Gauss(A, B, 10);
+			//Gauss(A, B, n_param);
+			gauss(A, B, n_param);
 			// подстановка новой I
 			fill(V.begin(), V.end(), 0);
-			for (int i_vel = 0; i_vel < 10; i_vel++)
+			for (int i_vel = 0; i_vel < n_param; i_vel++)
 			{
-				task.DirectTask(0, I_cur[i_vel] + B[i_vel], true);
+				//task.DirectTask(0, I_cur[i_vel] + B[i_vel], true);
 				task.V_in_rec(V_tmp, i_vel);
 				for (int i = 0; i < V.size(); i++)
 				{
-					V[i] += V_tmp[i];
-					V_one_source[i_vel][i] = V_tmp[i];
-
+					V[i] += (I_cur[i_vel] + B[i_vel]) * V_tmp[i];
+					//V_one_source[i_vel][i] = V_tmp[i];
 				}
 			}
 			prev_func_alpha = func_alpha;
 			func_alpha = task.GetInverseFunc(V, alpha_loc, I_cur, B);
-		} while (prev_func_alpha > func_alpha && alpha_loc < 1e-5);
+		} while (prev_func_alpha != prev_func_alpha || (1e-5 >= (func_alpha - prev_func_alpha) / prev_func_alpha && alpha_loc < 1e-15 && alpha_loc != 0));
 		ofp << "   " << '\t' << alpha_loc << '\t';
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < n_param; i++)
 		{
 			ofp << I_cur[i] + B[i] << '\t';
 		}
 		ofp << func_alpha << '\t' << abs(prev_func_alpha - func_alpha) / func_alpha << endl;
-		cout << "   " << '\t' << alpha_loc << '\t';
-		for (int i = 0; i < 10; i++)
-		{
-			cout << I_cur[i] + B[i] << '\t';
-		}
-		cout << func_alpha << '\t' << abs(prev_func_alpha - func_alpha) / func_alpha << endl;
+		//cout << "   " << '\t' << alpha_loc << '\t';
+		//for (int i = 0; i < n_param; i++)
+		//{
+		//	cout << I_cur[i] + B[i] << '\t';
+		//}
+		//cout << func_alpha << '\t' << abs(prev_func_alpha - func_alpha) / func_alpha << endl;
 
 		// сдвиг сил тока
-		for (int i_vel = 0; i_vel < 10; i_vel++)
+		for (int i_vel = 0; i_vel < n_param; i_vel++)
 		{
 			I_cur[i_vel] += B_save[i_vel];
 		}
 		for (int i = 0; i < V.size(); i++)
 		{
+			V[i] = V_save[i];
 			task.receivers[i].V = V_save[i];
 		}
 		
 		prev_func = func_now;
 		func_now = func_save;
 
-		cout << "iter " << iter + 1;
-		for (int i = 0; i < 10; i++)
-		{
-			cout << I_cur[i] << '\t';
-		}
-		cout << " func " << func_now << " d_func " << abs(prev_func - func_now) / func_now << endl;
+		//cout << "iter " << iter + 1;
+		//for (int i = 0; i < n_param; i++)
+		//{
+		//	cout << I_cur[i] << '\t';
+		//}
+		//cout << " func " << func_now << " d_func " << abs(prev_func - func_now) / func_now << endl;
 		ofp << iter + 1 << '\t' << "   " << '\t';
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < n_param; i++)
 		{
 			ofp << I_cur[i] << '\t';
 		} 

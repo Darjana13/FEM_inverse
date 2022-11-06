@@ -340,6 +340,9 @@ int FEM_electro::V_in_rec(vector<double>& V, int VEL_id)
 		V_end = V_in_point(GetR(i, VEL_id, 1), 0);
 
 		V[i] = V_start - V_end;
+		//cout << GetR(i, VEL_id, 0) << '\t' << V_start << '\t' << GetR(i, VEL_id, 1) << '\t' << V_end << "\t|";
+		//cout << GetR(i, VEL_id, 0) << '\t' << GetR(i, VEL_id, 1) << "\t|";
+
 	}
 	return 0;
 }

@@ -10,9 +10,9 @@ double FEM_electro::GetInverseFunc()
 		// без весов (!в main тоже менять!)
 		//res += (receivers[i].V - receivers[i].V_true) * (receivers[i].V - receivers[i].V_true);
 
-		cout << " V_true " << receivers[i].V_true << " V " << receivers[i].V << " res " << res << endl;
+		//cout << " V_true " << receivers[i].V_true << " V " << receivers[i].V << " res " << res << endl;
 	}
-	cout << " res " << res << endl;
+	//cout << " res " << res << endl;
 	return res;
 }
 
@@ -23,6 +23,8 @@ double FEM_electro::GetInverseFunc(vector<double>& V, double alpha, vector<doubl
 	{
 		res += (V[i] - receivers[i].V_true) * (V[i] - receivers[i].V_true) / (receivers[i].V_true * receivers[i].V_true);
 	}
+	//cout << " res1 " << res << endl;
+
 	if (alpha != 0)
 	{
 		for (int i = 0; i < I.size(); i++)
@@ -30,7 +32,7 @@ double FEM_electro::GetInverseFunc(vector<double>& V, double alpha, vector<doubl
 			res += alpha * (I[i]*I[i]);
 		}
 	}
-	cout << " res " << res << endl;
+	//cout << " res2 " << res << endl;
 	return res;
 }
 
@@ -41,6 +43,8 @@ double FEM_electro::GetInverseFunc(vector<double>& V, double alpha, vector<doubl
 	{
 		res += (V[i] - receivers[i].V_true) * (V[i] - receivers[i].V_true) / (receivers[i].V_true * receivers[i].V_true);
 	}
+	//cout << " res1 " << res << endl;
+
 	if (alpha != 0)
 	{
 		for (int i = 0; i < I.size(); i++)
@@ -48,6 +52,6 @@ double FEM_electro::GetInverseFunc(vector<double>& V, double alpha, vector<doubl
 			res += alpha * ((I[i] + Ih[i]) * (I[i] + Ih[i]));
 		}
 	}
-	cout << " res " << res << endl;
+	//cout << " res2 " << res << endl;
 	return res;
 }
